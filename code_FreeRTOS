@@ -1,0 +1,113 @@
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
+
+typedef struct Task {
+    char *name;
+    char **dependencies;
+    int execution_time;
+} Task;
+
+typedef struct TaskScheduler {
+    xQueueHandle task_queue;
+    TaskSet completed_tasks;
+    TaskHandle_t worker_threads[4];
+} TaskScheduler;
+
+void worker_thread_loop(void *pvParameters) {
+    TaskScheduler *task_scheduler = (TaskScheduler *)pvParameters;
+
+    while (1) {
+        Task *task;
+        xQueueReceive(task_scheduler->task_queue, &task, portMAX_DELAY);
+
+        if (task == NULL) {
+            break;
+        }
+
+        // Check for task dependencies
+        int all_dependencies_satisfied = 1;
+        for (int i = 0; i < task->execution_time; i++) {
+            if (task->dependencies[i] != NULL && !task_scheduler->completed_tasks[task->dependencies[i]]) {
+                all_dependencies_satisfied = 0;
+                break;
+            }
+        }
+
+        if (all_dependencies_satisfied) {
+            // Executes the task
+            vTaskDelay(task->execution_time);
+
+            // Add task to completed tasks so that we can call dependencies
+            task_scheduler->completed_tasks[task->name] = 1;
+
+            // Add dependent tasks to queue
+            for (int i = 0; i < task->execution_time; i++) {
+                if (task->dependencies[i] != NULL) {
+                    Task *dependent_task = task_scheduler->completed_tasks[task->dependencies[i]];
+                    xQueueSend(task_scheduler->task_queue, &dependent_task, portMAX_DELAY);
+                }
+            }
+        } else {
+            // Add task back to queue until it can be executed again
+            xQueueSend(task_scheduler->task_queue, &task, portMAX_DELAY);
+        }
+    }
+}
+
+void task_scheduler_start(TaskScheduler *task_scheduler) {
+    for (int i = 0; i < 4; i++) {
+        xTaskCreate(worker_thread_loop, "worker_thread", 2048, task_scheduler, 1, &task_scheduler->worker_threads[i]);
+    }
+}
+
+void task_scheduler_shutdown(TaskScheduler *task_scheduler) {
+    for (int i = 0; i < 4; i++) {
+        xQueueSend(task_scheduler->task_queue, NULL, portMAX_DELAY);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        vTaskWaitTermination(task_scheduler->worker_threads[i], NULL);
+    }
+}
+
+int main() {
+    TaskScheduler task_scheduler;
+
+    // Initializes the task queue
+    task_scheduler.task_queue = xQueueCreate(10, sizeof(Task *));
+
+    // Initializes the completed tasks set
+    for (int i = 0; i < 10; i++) {
+        task_scheduler.completed_tasks[i] = 0;
+    }
+
+    // Add tasks to the scheduler
+    Task task0 = { .name = "task0", .dependencies = NULL, .execution_time = 1.699 };
+    Task task1 = { .name = "task1", .dependencies = NULL, .execution_time = 1.935 };
+    Task task8 = { .name = "task8", .dependencies = &task1, .execution_time = 5.071 };
+    Task task4 = { .name = "task4", .dependencies = &task1, .execution_time = 3.872 };
+    Task task6 = { .name = "task6", .dependencies = &task1, .execution_time = 3.075 };
+    Task task2 = { .name = "task2", .dependencies = &task1, .execution_time = 2.946 };
+    Task task5 = { .name = "task5", .dependencies = &task2, .execution_time = 2.585 };
+    Task task7 = { .name = "task7", .dependencies = &task6, .execution_time = 3.717 };
+    Task task3 = { .name = "task3", .dependencies = &task4, .execution_time = 2.094 };
+    Task task9 = { .name = "task9", .dependencies = &task7, .execution_time = 1.440 };
+    
+    task_scheduler->task_queue->send(&task0, portMAX_DELAY);
+    task_scheduler->task_queue->send(&task1, portMAX_DELAY);
+    task_scheduler->task_queue->send(&task8, portMAX_DELAY);
+    task_scheduler->task_queue->send(&task4, portMAX_DELAY);
+    task_scheduler->task_queue->send(&task6, portMAX_DELAY);
+    task_scheduler->task_queue->send(&task2, portMAX_DELAY);
+    task_scheduler->task_queue->send(&task5, portMAX_DELAY);
+    task_scheduler->task_queue->send(&task7, portMAX_DELAY);
+    task_scheduler->task_queue->send(&task3, portMAX_DELAY);
+    task_scheduler->task_queue->send(&task9, portMAX_DELAY);
+
+    task_scheduler_start(&task_scheduler);
+
+    task_scheduler_shutdown(&task_scheduler);
+
+    return 0;
+}
