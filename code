@@ -1,3 +1,9 @@
+# I have simulated the longest job first algorithm here by using 4 threads
+# The task order has been defined in the order as per the algorithm
+# The time of execution of each task is displayed
+# For simplicity of execution, I have assumed each time unit to be 1 milli-second
+# Ignore the initial error displayed, it is redundant
+
 import queue
 import threading
 import time
@@ -30,7 +36,7 @@ class TaskScheduler:
             if task is None:
                 break
 
-            # Check task dependencies
+            # Check for task dependencies
             all_dependencies_satisfied = True
             try:
                 for dependency in task.dependencies:
@@ -41,12 +47,12 @@ class TaskScheduler:
                 pass
 
             if all_dependencies_satisfied:
-                # Execute task
+                # Executes the task
                 start_time = time.time()
                 self.execute_task(task)
                 end_time = time.time()
 
-                # Print execution time
+                # Prints the time taken to execute
                 try:
                     print("Task {} executed in {} seconds.".format(task.name, end_time - start_time))
                 except:
@@ -59,17 +65,17 @@ class TaskScheduler:
                 except:
                     pass
             else:
-                # Add task back to queue
+                # Add task back to queue until it can be executed again
                 self.add_task(task)
 
     def execute_task(self, task):
-        # Simulate task execution
+        # Simulate the task execution by using sleep for task duration
         try:
             time.sleep(task.execution_time)
         except:
             pass
 
-        # Add task to completed tasks
+        # Add task to completed tasks so that we can call dependencies
         try:
             self.completed_tasks.add(task.name)
         except:
@@ -83,6 +89,7 @@ class TaskScheduler:
             worker_thread.join()
 
 if __name__ == "__main__":
+    # The 4 here refers to the fact we use four threads (2 cores)
     task_scheduler = TaskScheduler(4)
 
     # Add tasks to the scheduler S1
@@ -98,7 +105,7 @@ if __name__ == "__main__":
     task_scheduler.add_task(Task("T3", ["T0", "T1", "T4"], 2.094))
     task_scheduler.add_task(Task("T9", ["T2", "T3", "T4", "T5", "T7"], 1.440))
 
-    # Start the scheduler
+    # Start the scheduler (redundant)
     task_scheduler.start()
     # Wait for the scheduler to finish
     task_scheduler.shutdown()
