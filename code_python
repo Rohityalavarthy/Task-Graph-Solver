@@ -81,6 +81,7 @@ class TaskScheduler:
         except:
             pass
 
+
     def shutdown(self):
         for i in range(len(self.worker_threads)):
             self.task_queue.put(None)
@@ -88,24 +89,24 @@ class TaskScheduler:
         for worker_thread in self.worker_threads:
             worker_thread.join()
 
-if __name__ == "__main__":
-    # The 4 here refers to the fact we use four threads (2 cores)
-    task_scheduler = TaskScheduler(4)
 
-    # Add tasks to the scheduler S1
-    task_scheduler.add_task(Task("T0", [], 1.699))
-    task_scheduler.add_task(Task("T1", [], 1.935))
-    # Add tasks to the scheduler S4
-    task_scheduler.add_task(Task("T8", ["T0", "T1"], 5.071))
-    task_scheduler.add_task(Task("T4", ["T0", "T1"], 3.872))
-    task_scheduler.add_task(Task("T6", ["T0", "T1"], 3.075))
-    task_scheduler.add_task(Task("T2", ["T0", "T1"], 2.946))
-    task_scheduler.add_task(Task("T5", ["T0", "T1", "T2"], 2.585))
-    task_scheduler.add_task(Task("T7", ["T0", "T1", "T6"], 3.717))
-    task_scheduler.add_task(Task("T3", ["T0", "T1", "T4"], 2.094))
-    task_scheduler.add_task(Task("T9", ["T2", "T3", "T4", "T5", "T7"], 1.440))
+# The 4 here refers to the fact we use four threads (2 cores)
+task_scheduler = TaskScheduler(4)
 
-    # Start the scheduler (redundant)
-    task_scheduler.start()
-    # Wait for the scheduler to finish
-    task_scheduler.shutdown()
+# Add tasks to the scheduler S1
+task_scheduler.add_task(Task("T0", [], 1.699))
+task_scheduler.add_task(Task("T1", [], 1.935))
+# Add tasks to the scheduler S4
+task_scheduler.add_task(Task("T8", ["T1"], 5.071))
+task_scheduler.add_task(Task("T4", ["T1"], 3.872))
+task_scheduler.add_task(Task("T6", ["T1"], 3.075))
+task_scheduler.add_task(Task("T2", ["T1"], 2.946))
+task_scheduler.add_task(Task("T5", ["T2"], 2.585))
+task_scheduler.add_task(Task("T7", ["T6"], 3.717))
+task_scheduler.add_task(Task("T3", ["T4"], 2.094))
+task_scheduler.add_task(Task("T9", ["T2", "T3", "T4", "T5", "T7"], 1.440))
+
+# Start the scheduler (redundant)
+task_scheduler.start()
+
+task_scheduler.shutdown()
