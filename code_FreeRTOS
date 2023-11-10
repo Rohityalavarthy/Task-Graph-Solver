@@ -1,3 +1,7 @@
+# I have simulated the longest job first algorithm here by using 4 threads
+# The task order has been defined in the order as per the algorithm
+# For simplicity of execution, I have assumed each time unit to be 1 milli-second
+
 #include <FreeRTOS.h>
 #include <task.h>
 #include <queue.h>
